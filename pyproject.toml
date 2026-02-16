@@ -1,0 +1,25 @@
+[project]
+name = "ceda-central-markets"
+version = "0.1.0"
+description = "Year-aware DENUE central markets filtering pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pypdf==5.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.3.5",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[project.scripts]
+ceda-pipeline = "ceda_pipeline.cli:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
