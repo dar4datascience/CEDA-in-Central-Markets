@@ -5,6 +5,7 @@ description = "Year-aware DENUE central markets filtering pipeline"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+  "openpyxl==3.1.5",
   "pypdf==5.2.0",
 ]
 

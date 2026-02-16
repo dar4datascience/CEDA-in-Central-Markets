@@ -63,14 +63,27 @@ The repository now includes a CLI entrypoint:
 
 ```bash
 ceda-pipeline \
-  --market-source data/central_markets.csv \
   --denue-source data/denue_2022.csv \
-  --scian-source data/scian_latest.csv \
   --market-reference MKT-001 \
   --year 2022 \
   --bbox 19.0,20.0,-100.0,-99.0 \
   --output outputs/market_2022.json
 ```
+
+When `--market-source` is omitted, the CLI automatically downloads and caches the canonical central-markets PDF from:
+
+- `http://www.protlcuem.gob.mx/work/models/Prologyca/Resource/2/1/images/DirectorioNacionaldeCentralesdeAbasto.pdf`
+
+When `--scian-source` is omitted, the CLI discovers and downloads the latest downloadable SCIAN file from:
+
+- `https://www.inegi.org.mx/scian/`
+
+By default, downloaded canonical sources are stored under `data/sources/` and reused on future runs.
+
+Force fresh downloads with:
+
+- `--refresh-market-source`
+- `--refresh-scian-source`
 
 Radius geofence mode can reuse market coordinates from your market source:
 

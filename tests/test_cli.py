@@ -1,6 +1,7 @@
 import csv
 import json
 
+from ceda_pipeline import cli
 from ceda_pipeline.cli import main
 
 
@@ -134,3 +135,38 @@ def test_cli_runs_with_radius_using_market_center(tmp_path):
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert rc == 0
     assert payload["input"]["geofence"]["type"] == "radius"
+
+
+def test_cli_auto_downloads_market_and_scian_sources(tmp_path, monkeypatch):
+    market = tmp_path / "market.csv"
+    denue = tmp_path / "denue.json"
+    scian = tmp_path / "scian.json"
+    output = tmp_path / "out-auto.json"
+
+    _write_market_csv(market)
+    _write_denue_json(denue)
+    _write_scian_json(scian)
+
+    monkeypatch.setattr(cli, "download_central_markets_pdf", lambda destination_dir, force=False: str(market))
+    monkeypatch.setattr(cli, "download_scian_source", lambda destination_dir, force=False: str(scian))
+
+    rc = main(
+        [
+            "--denue-source",
+            str(denue),
+            "--market-reference",
+            "m1",
+            "--year",
+            "2022",
+            "--bbox",
+            "19.0,20.0,-100.0,-99.0",
+            "--data-dir",
+            str(tmp_path / "cache"),
+            "--output",
+            str(output),
+        ]
+    )
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert rc == 0
+    assert payload["results"][0]["establishment_id"] == "1"

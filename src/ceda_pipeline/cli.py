@@ -5,7 +5,13 @@ import json
 from datetime import date
 from pathlib import Path
 
-from .data_sources import load_denue_rows, load_market_source, load_scian_rows
+from .data_sources import (
+    download_central_markets_pdf,
+    download_scian_source,
+    load_denue_rows,
+    load_market_source,
+    load_scian_rows,
+)
 from .filtering import resolve_market_reference
 from .geocode import apply_geocoding
 from .geocoding_service import NominatimGeocoder, load_geocode_cache, save_geocode_cache
@@ -16,11 +22,14 @@ from .scian import load_scian_catalog
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run DENUE central markets pipeline with real data files")
-    parser.add_argument("--market-source", required=True, help="Path to central market source (CSV/JSON/PDF)")
+    parser.add_argument("--market-source", help="Optional path to central market source (CSV/JSON/PDF)")
     parser.add_argument("--denue-source", required=True, help="Path to DENUE rows file (CSV/JSON)")
-    parser.add_argument("--scian-source", required=True, help="Path to SCIAN catalog file (CSV/JSON)")
+    parser.add_argument("--scian-source", help="Optional path to SCIAN catalog file (CSV/JSON)")
     parser.add_argument("--market-reference", required=True, help="Market id or address")
     parser.add_argument("--year", required=True, type=int, help="Target year")
+    parser.add_argument("--data-dir", default="data/sources", help="Local canonical source cache directory")
+    parser.add_argument("--refresh-market-source", action="store_true", help="Force re-download of canonical central-markets PDF")
+    parser.add_argument("--refresh-scian-source", action="store_true", help="Force re-download of canonical SCIAN source")
 
     geo_group = parser.add_mutually_exclusive_group(required=True)
     geo_group.add_argument("--bbox", help="min_lat,max_lat,min_lon,max_lon")
@@ -43,14 +52,28 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    market_rows = load_market_source(args.market_source)
+    market_source_path = args.market_source
+    if not market_source_path:
+        market_source_path = download_central_markets_pdf(
+            destination_dir=str(Path(args.data_dir) / "central_markets"),
+            force=args.refresh_market_source,
+        )
+
+    scian_source_path = args.scian_source
+    if not scian_source_path:
+        scian_source_path = download_scian_source(
+            destination_dir=str(Path(args.data_dir) / "scian"),
+            force=args.refresh_scian_source,
+        )
+
+    market_rows = load_market_source(market_source_path)
     market_records = parse_market_rows(market_rows)
     selected = resolve_market_reference(args.market_reference, market_records)
 
     geofence_input = _build_geofence_input(args=args, selected_market=selected)
 
     denue_rows = load_denue_rows(args.denue_source, year=args.year)
-    scian_rows = load_scian_rows(args.scian_source)
+    scian_rows = load_scian_rows(scian_source_path)
     scian_catalog = load_scian_catalog(
         scian_rows,
         version=args.scian_version,

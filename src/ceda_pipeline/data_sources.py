@@ -4,6 +4,34 @@ import csv
 import json
 import re
 from pathlib import Path
+import unicodedata
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
+
+
+CENTRAL_MARKETS_PDF_URL = (
+    "http://www.protlcuem.gob.mx/work/models/Prologyca/Resource/2/1/images/"
+    "DirectorioNacionaldeCentralesdeAbasto.pdf"
+)
+SCIAN_INDEX_URL = "https://www.inegi.org.mx/scian/"
+SCIAN_XLSX_URL = "https://www.inegi.org.mx/contenidos/app/scian/scian_2023_categorias_y_productos.xlsx?v=20230719"
+
+SCIAN_FIELD_ALIASES = {
+    "code": "code",
+    "codigo": "code",
+    "codigo_scian": "code",
+    "codigo_scian_2023": "code",
+    "clave": "code",
+    "title": "title",
+    "titulo": "title",
+    "categoria": "title",
+    "descripcion": "title",
+    "level": "level",
+    "nivel": "level",
+    "parent_code": "parent_code",
+    "codigo_padre": "parent_code",
+    "padre": "parent_code",
+}
 
 
 def load_market_source(path: str) -> list[dict[str, object]]:
@@ -35,6 +63,54 @@ def load_market_source(path: str) -> list[dict[str, object]]:
     return normalized_rows
 
 
+def download_central_markets_pdf(destination_dir: str, *, force: bool = False) -> str:
+    directory = Path(destination_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    target_path = directory / "DirectorioNacionaldeCentralesdeAbasto.pdf"
+    if target_path.exists() and not force:
+        return str(target_path)
+
+    _download_to_file(
+        url=CENTRAL_MARKETS_PDF_URL,
+        target_path=target_path,
+        user_agent="ceda-central-markets/0.1",
+    )
+    return str(target_path)
+
+
+def download_scian_source(destination_dir: str, *, force: bool = False) -> str:
+    directory = Path(destination_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+
+    manifest_path = directory / "scian_source_manifest.json"
+    if manifest_path.exists() and not force:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        cached_path = directory / str(payload["local_file"])
+        if cached_path.exists():
+            return str(cached_path)
+
+    source_url = SCIAN_XLSX_URL
+    filename = Path(urlparse(source_url).path).name or "scian_source.xlsx"
+    downloaded_path = directory / filename
+    if not downloaded_path.exists() or force:
+        _download_to_file(
+            url=source_url,
+            target_path=downloaded_path,
+            user_agent="ceda-central-markets/0.1",
+        )
+
+    manifest_payload = {
+        "index_url": SCIAN_INDEX_URL,
+        "download_url": source_url,
+        "local_file": downloaded_path.name,
+    }
+    manifest_path.write_text(
+        json.dumps(manifest_payload, ensure_ascii=True, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return str(downloaded_path)
+
+
 def load_denue_rows(path: str, *, year: int) -> list[dict[str, object]]:
     rows = _load_structured_rows(Path(path))
     filtered: list[dict[str, object]] = []
@@ -52,14 +128,36 @@ def load_denue_rows(path: str, *, year: int) -> list[dict[str, object]]:
 
 def load_scian_rows(path: str) -> list[dict[str, object]]:
     rows = _load_structured_rows(Path(path))
-    expected = {"code", "title", "level", "parent_code"}
+
     normalized: list[dict[str, object]] = []
     for row in rows:
-        missing = {field for field in expected if field not in row}
-        if missing:
-            missing_list = ", ".join(sorted(missing))
-            raise ValueError(f"SCIAN row missing required fields: {missing_list}")
-        normalized.append(row)
+        renamed: dict[str, object] = {}
+        for key, value in row.items():
+            alias = SCIAN_FIELD_ALIASES.get(_normalize_key(key))
+            if alias:
+                renamed[alias] = value
+
+        code = _normalize_scian_code(renamed.get("code"))
+        title = str(renamed.get("title", "")).strip()
+        if not code or not title:
+            continue
+
+        level_raw = renamed.get("level")
+        level = int(level_raw) if level_raw not in {None, ""} else len(code)
+        parent_raw = _normalize_scian_code(renamed.get("parent_code"))
+        parent_code = parent_raw if parent_raw else (code[:-1] if len(code) > 2 else None)
+
+        normalized.append(
+            {
+                "code": code,
+                "title": title,
+                "level": level,
+                "parent_code": parent_code,
+            }
+        )
+
+    if not normalized:
+        raise ValueError("No valid SCIAN rows found in source file")
 
     return normalized
 
@@ -128,4 +226,65 @@ def _load_structured_rows(path: Path) -> list[dict[str, object]]:
             return [dict(item) for item in payload]
         raise ValueError("Expected JSON array of objects")
 
+    if suffix == ".xlsx":
+        try:
+            from openpyxl import load_workbook
+        except ImportError as exc:
+            raise ImportError("openpyxl is required for XLSX ingestion. Install dependencies first.") from exc
+
+        workbook = load_workbook(path, read_only=True, data_only=True)
+        sheet = workbook.active
+        rows = sheet.iter_rows(values_only=True)
+
+        headers: list[str] | None = None
+        parsed_rows: list[dict[str, object]] = []
+        for values in rows:
+            cells = ["" if value is None else str(value).strip() for value in values]
+            if headers is None:
+                if any(cells):
+                    headers = cells
+                continue
+
+            if not any(cells):
+                continue
+
+            row = {
+                headers[index]: values[index]
+                for index in range(min(len(headers), len(values)))
+                if headers[index]
+            }
+            parsed_rows.append(row)
+
+        return parsed_rows
+
     raise ValueError(f"Unsupported file format: {suffix}. Use CSV, JSON, or PDF for market source.")
+
+
+def _download_to_file(*, url: str, target_path: Path, user_agent: str) -> None:
+    request = Request(url, headers={"User-Agent": user_agent})
+    with urlopen(request, timeout=60.0) as response:
+        data = response.read()
+    target_path.write_bytes(data)
+
+
+def _normalize_key(value: object) -> str:
+    text = str(value or "").strip().lower()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+    return text.strip("_")
+
+
+def _normalize_scian_code(value: object) -> str | None:
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    if text.endswith(".0"):
+        text = text[:-2]
+
+    digits = re.sub(r"[^0-9]", "", text)
+    return digits or None
