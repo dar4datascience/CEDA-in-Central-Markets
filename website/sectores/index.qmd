@@ -1,0 +1,8 @@
+---
+title: "Sectores SCIAN"
+---
+
+<!-- Será reemplazada por scripts/build_site.py con una tarjeta por
+     sector presente en los datos (`sector` / `sector_title`). -->
+
+Explora los establecimientos por sector económico del catálogo SCIAN 2023.

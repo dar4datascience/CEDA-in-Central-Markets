@@ -206,3 +206,32 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .windsurf/*
+
+# ---------------------------------------------------------------------------
+# Project data policy: Git tracks code + small curated reference files only.
+# Raw downloads and generated artifacts stay local — they are re-fetchable
+# via source manifests or regenerable via the pipeline/notebooks.
+# See data/README.md for the directory layout.
+# ---------------------------------------------------------------------------
+# Bulk DENUE extracts (~800 MB of zips/CSVs)
+data/denue/
+# Generated outputs: CSVs, GeoJSON, HTML maps/reports
+data/outputs/
+# Pipeline auto-download cache (--data-dir default in cli.py)
+data/sources/
+# Raw SCIAN catalog download (5.6 MB; provenance in scian_source_manifest.json)
+data/scian/*.xlsx
+# Regenerable SCIAN processed extract
+data/scian/scian_2023_processed.csv
+# Local caches
+cache/
+
+# Quarto website output and render cache
+website/_site/
+website/.quarto/
+website/*_cache/
+*.quarto_ipynb
+
+# OS / editor junk
+.DS_Store
+Thumbs.db

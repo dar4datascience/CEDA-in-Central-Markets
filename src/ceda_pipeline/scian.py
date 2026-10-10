@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from .models import ScianCatalogEntry
 
 
@@ -7,7 +9,8 @@ def load_scian_catalog(rows: list[dict[str, object]], *, version: str, version_d
     catalog: dict[str, ScianCatalogEntry] = {}
     for row in rows:
         code = str(row["code"]).strip()
-        if not code.isdigit() or len(code) not in {2, 3, 4, 5, 6}:
+        valid = code.isdigit() and len(code) in {2, 3, 4, 5, 6}
+        if not valid and not re.fullmatch(r"\d{2}-\d{2}", code):
             raise ValueError(f"Invalid SCIAN code format: {code}")
 
         parent_code = str(row["parent_code"]).strip() if row.get("parent_code") else None

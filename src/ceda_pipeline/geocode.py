@@ -61,6 +61,15 @@ def build_geofence(geofence: dict[str, object]) -> dict[str, object]:
             "max_lon": max_lon,
         }
 
+    if kind == "polygon":
+        coordinates = [
+            (float(point[0]), float(point[1]))
+            for point in geofence["coordinates"]
+        ]
+        if len(coordinates) < 3:
+            raise ValueError("Polygon geofence needs at least 3 vertices")
+        return {"type": "polygon", "coordinates": coordinates}
+
     raise ValueError(f"Unsupported geofence type: {kind}")
 
 
@@ -77,7 +86,36 @@ def point_in_geofence(lat: float, lon: float, geofence: dict[str, object]) -> bo
         dist = _distance_m(lat, lon, center_lat, center_lon)
         return dist < geofence["radius_m"] or isclose(dist, geofence["radius_m"], rel_tol=0.0, abs_tol=1e-6)
 
+    if geofence["type"] == "polygon":
+        return _point_in_polygon(lat, lon, geofence["coordinates"])
+
     raise ValueError(f"Unsupported geofence type: {geofence['type']}")
+
+
+def _point_in_polygon(lat: float, lon: float, coordinates: list[tuple[float, float]]) -> bool:
+    """Ray-casting on (lat, lon) vertices; boundary points count as inside."""
+    points = coordinates if coordinates[0] == coordinates[-1] else coordinates + [coordinates[0]]
+    inside = False
+    for (lat_a, lon_a), (lat_b, lon_b) in zip(points, points[1:]):
+        if _point_on_segment(lat, lon, lat_a, lon_a, lat_b, lon_b):
+            return True
+        if (lon_a > lon) != (lon_b > lon):
+            crossing_lat = (lat_b - lat_a) * (lon - lon_a) / (lon_b - lon_a) + lat_a
+            if lat < crossing_lat:
+                inside = not inside
+    return inside
+
+
+def _point_on_segment(
+    lat: float, lon: float, lat_a: float, lon_a: float, lat_b: float, lon_b: float
+) -> bool:
+    cross = (lat - lat_a) * (lon_b - lon_a) - (lon - lon_a) * (lat_b - lat_a)
+    if not isclose(cross, 0.0, rel_tol=0.0, abs_tol=1e-12):
+        return False
+    return (
+        min(lat_a, lat_b) - 1e-12 <= lat <= max(lat_a, lat_b) + 1e-12
+        and min(lon_a, lon_b) - 1e-12 <= lon <= max(lon_a, lon_b) + 1e-12
+    )
 
 
 def _distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

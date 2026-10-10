@@ -1,0 +1,10 @@
+---
+title: "Acerca de"
+---
+
+Monitor CEDA es un directorio estático generado con
+[Quarto](https://quarto.org) a partir de datos abiertos del INEGI.
+
+El objetivo es documentar el tejido económico alrededor de las centrales
+de abasto de México, empezando por la Central de Abasto de Iztapalapa —
+la más grande de América Latina.

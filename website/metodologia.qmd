@@ -1,0 +1,36 @@
+---
+title: "Metodología"
+toc: true
+---
+
+## Fuentes
+
+1. **DENUE (INEGI)** — Directorio Estadístico Nacional de Unidades
+   Económicas, archivo masivo de la Ciudad de México (`denue_09`).
+2. **Directorio Nacional de Centrales de Abasto** — referencia de la
+   Central de Abasto de Iztapalapa.
+3. **SCIAN 2023 (INEGI)** — catálogo de clasificación utilizado para
+   mapear `codigo_act` a sectores y descripciones.
+
+## Geocercado
+
+Los establecimientos se filtran espacialmente respecto a la ubicación de
+la Central de Abasto. Los puntos sobre el borde del geocercado se
+consideran dentro. Los parámetros exactos (bbox o radio) de cada corrida
+quedan registrados en los metadatos del pipeline.
+
+## Métricas de calidad
+
+Cada corrida del pipeline reporta:
+
+- `geocode_success_rate`
+- `scian_mapping_coverage`
+- `spatial_match_rate`
+
+<!-- scripts/build_site.py insertará aquí la tabla de métricas reales
+     y los códigos SCIAN no resueltos (`unknown_scian_codes`). -->
+
+## Procedencia
+
+Los metadatos de descarga del DENUE (URL fuente, fecha de obtención,
+año de referencia y hash del archivo) se preservan con cada corrida.

@@ -13,6 +13,13 @@ dependencies = [
 dev = [
   "pytest==8.3.5",
 ]
+poc = [
+  "pandas>=2.2",
+  "geopandas>=1.0",
+  "osmnx>=2.0",
+  "folium>=0.18",
+  "jupyter>=1.0",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

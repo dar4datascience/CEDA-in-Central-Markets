@@ -13,6 +13,7 @@ DENUE_FIELD_ALIASES = {
     "denue_id": "establishment_id",
     "establecimiento_id": "establishment_id",
     "nombre": "name",
+    "nom_estab": "name",
     "name": "name",
     "direccion": "address",
     "address": "address",
@@ -21,6 +22,7 @@ DENUE_FIELD_ALIASES = {
     "longitud": "lon",
     "lon": "lon",
     "codigo_scian": "scian_code",
+    "codigo_act": "scian_code",
     "scian": "scian_code",
     "status": "status",
 }
@@ -55,6 +57,11 @@ def normalize_denue_rows(rows: list[dict[str, object]], *, year: int) -> list[De
             if alias:
                 renamed[alias] = value
 
+        if "address" not in renamed:
+            composed = _compose_denue_address(row)
+            if composed:
+                renamed["address"] = composed
+
         required = {"establishment_id", "name", "address", "lat", "lon", "scian_code"}
         missing = required - renamed.keys()
         if missing:
@@ -75,3 +82,35 @@ def normalize_denue_rows(rows: list[dict[str, object]], *, year: int) -> list[De
         )
 
     return normalized
+
+
+def _compose_denue_address(row: dict[str, object]) -> str:
+    """Build an address string from raw DENUE bulk-file address components."""
+    vial = " ".join(
+        part
+        for part in (
+            str(row.get("tipo_vial", "") or "").strip(),
+            str(row.get("nom_vial", "") or "").strip(),
+            str(row.get("numero_ext", "") or "").strip(),
+            str(row.get("letra_ext", "") or "").strip(),
+        )
+        if part
+    )
+    asent = " ".join(
+        part
+        for part in (
+            str(row.get("tipo_asent", "") or "").strip(),
+            str(row.get("nomb_asent", "") or "").strip(),
+        )
+        if part
+    )
+    tail = " ".join(
+        part
+        for part in (
+            str(row.get("cod_postal", "") or "").strip(),
+            str(row.get("municipio", "") or "").strip(),
+            str(row.get("entidad", "") or "").strip(),
+        )
+        if part
+    )
+    return ", ".join(part for part in (vial, asent, tail) if part)

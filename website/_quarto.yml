@@ -1,0 +1,37 @@
+project:
+  type: website
+  output-dir: _site
+
+lang: es
+
+website:
+  title: "Monitor CEDA"
+  description: "Directorio de establecimientos alrededor de la Central de Abasto de Iztapalapa, Ciudad de México (INEGI DENUE)."
+  navbar:
+    background: primary
+    left:
+      - href: index.qmd
+        text: Inicio
+      - href: mercados/ceda-iztapalapa/index.qmd
+        text: Mercado
+      - href: sectores/index.qmd
+        text: Sectores
+      - href: colonias/index.qmd
+        text: Colonias
+      - href: descargas.qmd
+        text: Datos
+      - href: metodologia.qmd
+        text: Metodología
+    right:
+      - href: acerca-de.qmd
+        text: Acerca de
+  page-footer:
+    center: "Datos: INEGI DENUE · SCIAN 2023"
+
+format:
+  html:
+    theme: cosmo
+    toc: false
+
+execute:
+  freeze: auto

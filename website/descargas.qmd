@@ -1,0 +1,20 @@
+---
+title: "Datos"
+---
+
+<!-- scripts/build_site.py copiará los artefactos aquí y generará los
+     enlaces de descarga. -->
+
+## Archivos
+
+| Archivo | Formato | Contenido |
+|---|---|---|
+| `ceda_iztapalapa_denue.csv` | CSV | Establecimientos dentro del geocercado, con columnas DENUE + SCIAN |
+| `ceda_iztapalapa_denue.geojson` | GeoJSON | Los mismos establecimientos como capa geográfica |
+
+## Esquema
+
+`id`, `nom_estab`, `codigo_act`, `nombre_act`, `per_ocu`, `tipo_vial`,
+`nom_vial`, `numero_ext`, `letra_ext`, `tipo_asent`, `nomb_asent`,
+`cod_postal`, `entidad`, `cve_mun`, `municipio`, `latitud`, `longitud`,
+`fecha_alta`, `scian_title`, `sector`, `sector_title`.

@@ -1,0 +1,8 @@
+---
+title: "Municipios"
+---
+
+<!-- Será reemplazada por scripts/build_site.py con un `listing:` de
+     Quarto alimentado por metadatos YAML generados. -->
+
+Selecciona un municipio para ver sus establecimientos.

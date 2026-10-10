@@ -25,7 +25,8 @@ SCIAN_FIELD_ALIASES = {
     "title": "title",
     "titulo": "title",
     "categoria": "title",
-    "descripcion": "title",
+    "description": "description",
+    "descripcion": "description",
     "level": "level",
     "nivel": "level",
     "parent_code": "parent_code",
@@ -129,6 +130,16 @@ def load_denue_rows(path: str, *, year: int) -> list[dict[str, object]]:
 def load_scian_rows(path: str) -> list[dict[str, object]]:
     rows = _load_structured_rows(Path(path))
 
+    merged_sectors: list[tuple[int, int, str]] = []
+    for row in rows:
+        for key, value in row.items():
+            if SCIAN_FIELD_ALIASES.get(_normalize_key(key)) != "code":
+                continue
+            code = _normalize_scian_code(value)
+            if code and "-" in code:
+                low, high = code.split("-")
+                merged_sectors.append((int(low), int(high), code))
+
     normalized: list[dict[str, object]] = []
     for row in rows:
         renamed: dict[str, object] = {}
@@ -138,19 +149,20 @@ def load_scian_rows(path: str) -> list[dict[str, object]]:
                 renamed[alias] = value
 
         code = _normalize_scian_code(renamed.get("code"))
-        title = str(renamed.get("title", "")).strip()
+        title = _clean_scian_title(str(renamed.get("title", "")))
         if not code or not title:
             continue
 
         level_raw = renamed.get("level")
         level = int(level_raw) if level_raw not in {None, ""} else len(code)
         parent_raw = _normalize_scian_code(renamed.get("parent_code"))
-        parent_code = parent_raw if parent_raw else (code[:-1] if len(code) > 2 else None)
+        parent_code = parent_raw if parent_raw else _infer_parent_code(code, merged_sectors)
 
         normalized.append(
             {
                 "code": code,
                 "title": title,
+                "description": str(renamed.get("description", "")).strip() or None,
                 "level": level,
                 "parent_code": parent_code,
             }
@@ -241,8 +253,13 @@ def _load_structured_rows(path: Path) -> list[dict[str, object]]:
         for values in rows:
             cells = ["" if value is None else str(value).strip() for value in values]
             if headers is None:
-                if any(cells):
+                if any(cells) and _looks_like_scian_header_row(cells):
                     headers = cells
+                continue
+
+            if _looks_like_scian_header_row(cells):
+                # Handle repeated header rows in long sheets.
+                headers = cells
                 continue
 
             if not any(cells):
@@ -283,8 +300,38 @@ def _normalize_scian_code(value: object) -> str | None:
     if not text:
         return None
 
+    if re.fullmatch(r"\d{2}-\d{2}", text):
+        return text
+
     if text.endswith(".0"):
         text = text[:-2]
 
     digits = re.sub(r"[^0-9]", "", text)
     return digits or None
+
+
+def _infer_parent_code(
+    code: str, merged_sectors: list[tuple[int, int, str]] | None = None
+) -> str | None:
+    if "-" in code or len(code) == 2:
+        return None
+    if len(code) == 3 and merged_sectors:
+        prefix = int(code[:2])
+        for low, high, merged_code in merged_sectors:
+            if low <= prefix <= high:
+                return merged_code
+    return code[:-1]
+
+
+def _clean_scian_title(value: str) -> str:
+    """Strip whitespace and the trilateral 'T' marker INEGI appends to titles."""
+    return re.sub(r"T\s*$", "", value.strip()).strip()
+
+
+def _looks_like_scian_header_row(cells: list[str]) -> bool:
+    normalized = {
+        SCIAN_FIELD_ALIASES.get(_normalize_key(cell), "")
+        for cell in cells
+        if cell
+    }
+    return "code" in normalized and "title" in normalized

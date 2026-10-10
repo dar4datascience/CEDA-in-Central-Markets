@@ -105,3 +105,33 @@ def test_load_scian_rows_from_xlsx_with_spanish_headers(tmp_path):
     assert rows[0]["code"] == "46"
     assert rows[0]["title"] == "Comercio"
     assert rows[1]["parent_code"] == "46111"
+
+
+def test_load_scian_rows_keeps_title_separate_from_description(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Código", "Título", "Descripción"])
+    sheet.append(["46", "Comercio al por menorT", "Texto largo de descripción"])
+
+    path = tmp_path / "scian.xlsx"
+    workbook.save(path)
+
+    rows = load_scian_rows(str(path))
+    assert rows[0]["title"] == "Comercio al por menor"
+    assert rows[0]["description"] == "Texto largo de descripción"
+
+
+def test_load_scian_rows_maps_merged_sector_children(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Código", "Título"])
+    sheet.append(["31-33", "Industrias manufacturerasT"])
+    sheet.append(["311", "Industria alimentariaT"])
+
+    path = tmp_path / "scian.xlsx"
+    workbook.save(path)
+
+    rows = load_scian_rows(str(path))
+    assert rows[0]["code"] == "31-33"
+    assert rows[0]["parent_code"] is None
+    assert rows[1]["parent_code"] == "31-33"

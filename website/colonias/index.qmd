@@ -1,0 +1,8 @@
+---
+title: "Colonias"
+---
+
+<!-- Será reemplazada por scripts/build_site.py con las colonias
+     (`nomb_asent`) ordenadas por número de establecimientos. -->
+
+Explora los establecimientos por colonia o asentamiento.

@@ -1,0 +1,43 @@
+---
+title: "Central de Abasto de Iztapalapa"
+subtitle: "Área de influencia · Ciudad de México"
+---
+
+<!-- Esta página será generada por scripts/build_site.py con estadísticas
+     reales, mapa de establecimientos y métricas de calidad. -->
+
+## Resumen
+
+El geocercado alrededor de la Central de Abasto de Iztapalapa contiene
+miles de establecimientos registrados en el DENUE, distribuidos
+principalmente en la alcaldía Iztapalapa.
+
+::: {.grid}
+
+::: {.g-col-6 .g-col-md-3}
+### Establecimientos
+*— por generar —*
+:::
+
+::: {.g-col-6 .g-col-md-3}
+### Municipios
+*— por generar —*
+:::
+
+::: {.g-col-6 .g-col-md-3}
+### Sectores SCIAN
+*— por generar —*
+:::
+
+::: {.g-col-6 .g-col-md-3}
+### Colonias
+*— por generar —*
+:::
+
+:::
+
+## Explorar
+
+- [Por municipio](municipios/index.qmd)
+- [Por sector SCIAN](../../sectores/index.qmd)
+- [Por colonia](../../colonias/index.qmd)

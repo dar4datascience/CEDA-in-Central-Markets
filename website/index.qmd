@@ -1,0 +1,45 @@
+---
+title: "Monitor CEDA"
+subtitle: "Establecimientos alrededor de la Central de Abasto de Iztapalapa"
+---
+
+::: {.column-page}
+
+## ¿Qué es esto?
+
+Un directorio de los establecimientos registrados en el DENUE (INEGI)
+dentro del área de influencia de la **Central de Abasto de Iztapalapa**,
+Ciudad de México — enriquecido con el catálogo SCIAN 2023.
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-4}
+### [El mercado](mercados/ceda-iztapalapa/index.qmd)
+
+Resumen del área de influencia: conteos, mapa y métricas de calidad del
+geocercado.
+:::
+
+::: {.g-col-12 .g-col-md-4}
+### [Sectores](sectores/index.qmd)
+
+Explora los establecimientos por sector económico SCIAN.
+:::
+
+::: {.g-col-12 .g-col-md-4}
+### [Colonias](colonias/index.qmd)
+
+Explora los establecimientos por colonia o asentamiento.
+:::
+
+:::
+
+:::
+
+::: {.callout-note}
+## Datos
+
+Los archivos procesados (CSV y GeoJSON) están disponibles en la sección
+[Datos](descargas.qmd). La metodología y las fuentes se describen en
+[Metodología](metodologia.qmd).
+:::
